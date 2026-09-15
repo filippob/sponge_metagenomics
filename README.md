@@ -10,4 +10,4 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
 4. assembly of the metagenome
 5. ...
 
-[!workflow](material/workflow.png)
+[workflow](material/workflow.png)
