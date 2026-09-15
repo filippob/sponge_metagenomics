@@ -4,10 +4,14 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
 
 ## General workflow
 
-1. data cleaning: removing adapters, read trimming and filtering
-2. joining of paired-end reads?
-3. subtraction of host reads (*Spongia officinalis*) based on the host reference genome
-4. assembly of the metagenome
-5. ...
+[bioinfo1] **Subtract host (sponge) reads**
+  1. QC, adapter, trimming
+  2. alignment on reference genome (which)
+  3. extract unmapped reads (more details from Xenia)
+
+[bioinfo2] **Taxonomic classification and abundance table**
+  4. nf-core/taxprofiler
+  5. kraken2 + bracken
+
 
 ![workflow](material/workflow.png)
