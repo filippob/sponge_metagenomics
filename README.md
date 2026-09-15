@@ -18,7 +18,7 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
 ---
 
 ![workflow](material/workflow.png)
-**Figure 1**: general workflow of the project
+**Figure 1**: general workflow of the project (dashed lines refer to future lines of work)
 
 ---
 
