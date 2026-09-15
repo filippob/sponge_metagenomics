@@ -10,7 +10,7 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
   3. extract unmapped reads (more details from Xenia)
 
 [bioinfo2] **Taxonomic classification and abundance table**
-  1. nf-core/taxprofiler
+  1. nf-core/taxprofiler [_taxprofiler.slurm.sh](metagenomics/_taxprofiler.slurm.sh) [stub]
   2. kraken2 + bracken
 
 
