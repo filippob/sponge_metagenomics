@@ -33,8 +33,7 @@ if (length(args) >= 1) {
     taxonomy_file = "taxprofiler/taxonomy.tsv",
     conf_file = "data/metadata.csv",
     nfactors = 2, ## n. of design variables (e.g. treatment and timpoint --> nfactors = 2)
-    min_tot_n = 20,
-    min_sample = 3,
+    min_counts = 10,
     project = "", ## USE ONLY FOR SUBSETTING !!
     treatment_column = "Type",
     sample_column = "SampleID",
@@ -71,20 +70,8 @@ names(otu) = gsub("_ERZ21861969_db2.kraken2.kraken2.report.txt.bracken_num", "",
 counts <- otu |> select(-c(name,taxonomy_id,taxonomy_lvl)) |> as.matrix()
 rownames(counts) = otu$taxonomy_id
 
-
-abund <- read.delim(
-  fname,
-  header = TRUE,
-  row.names = 1,
-  check.names = FALSE
-)
-names(abund) = gsub("_ERZ21861969_db2.kraken2.kraken2.report.txt.bracken_num", "", names(abund))
-abund <- abund[,-c(1,2)]
-abund <- as.matrix(abund)
-
-temp <- otu_table(counts, taxa_are_rows = TRUE)
-
 # taxonomy table
+writeLines(" - read taxonomies")
 fname =  file.path(prjfolder, taxonomy_file)
 tax <- read.delim(
   fname,
@@ -122,22 +109,42 @@ tax <- tax %>%
 tax_mat <- as.matrix(tax)
 
 # metadata
+writeLines(" - read metadata ")
 fname =  file.path(prjfolder, conf_file)
 metadata <- read.delim(fname, row.names = 1, check.names = FALSE, sep = ",")
 
-
-phyls <- phyloseq(
+writeLines(" - creating phyloseq object")
+physeq <- phyloseq(
   otu_table(counts, taxa_are_rows=TRUE),
   tax_table(tax_mat),
   sample_data(metadata)
 )
 
-print(paste("N. of OTUs is:", nrow(otu_table(phyls))))
-print(paste("N .of samples is:", ncol(otu_table(phyls))))
+print(paste("N. of OTUs is:", nrow(otu_table(physeq))))
+print(paste("N .of samples is:", ncol(otu_table(physeq))))
 
-barplot(sort(sample_sums(phyls)))
+writeLines(" - filtering taxa for minimum counts")
+physeq_pruned <- prune_taxa(taxa_sums(physeq) > config$min_counts, physeq)
 
+print(paste("Minimum number of counts to be retained:", config$min_counts))
+print(paste("N. of OTUs after filtering is:", nrow(otu_table(physeq_pruned))))
+
+sorted_taxa <- sort(taxa_sums(physeq_pruned))
+sorted_samples <- sort(sample_sums(physeq_pruned))
+
+fname = file.path(output_folder, "sorted_taxa.png")
+png(fname)
+barplot(sorted_taxa, col="red")
+dev.off()
+
+fname = file.path(output_folder, "sorted_samples.png")
+png(fname)
+barplot(sorted_samples, col="green")
+dev.off()
 
 ## save phyloseq object
+writeLines(" - saving phyloseq object with project data")
 fname = file.path(output_folder, "phyloseq.RData")
-save(phyls, file = fname)
+save(physeq_pruned, file = fname)
+
+print("DONE!")
