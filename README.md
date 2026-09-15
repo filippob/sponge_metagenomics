@@ -14,8 +14,11 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
   2. [optional] kraken2/bracken [bracken.sh](metagenomics/bracken.sh) [if kraken2 is run alongside other DBs in taxprofiler but bracken is not included]
   3. produce single count table [combine_bracken.sh](metagenomics/combine_bracken.sh) [!! a locally modified version of the script was used: only counts, no relative abundances]
 
+---
 
 ![workflow](material/workflow.png)
 **Figure 1**: general workflow of the project
+
+---
 
 [stat1] **Clustering / PCA**
