@@ -11,7 +11,7 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
 
 [bioinfo2] **Taxonomic classification and abundance table**
   1. nf-core/taxprofiler [_taxprofiler.slurm.sh](metagenomics/_taxprofiler.slurm.sh) [stub]
-  2. kraken2/bracken [bracken.sh](metagenomics/bracken.sh) [if kraken2 is run alongside other DBs in taxprofiler but bracken is not included]
+  2. [optional] kraken2/bracken [bracken.sh](metagenomics/bracken.sh) [if kraken2 is run alongside other DBs in taxprofiler but bracken is not included]
 
 
 ![workflow](material/workflow.png)
