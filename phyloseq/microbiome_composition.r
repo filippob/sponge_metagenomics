@@ -5,6 +5,7 @@ library("ggplot2")
 library("phyloseq")
 library("microbiome")
 library("data.table")
+library("RColorBrewer")
 
 ################################################################################
 ## PARAMETERS
@@ -65,6 +66,7 @@ ps.rel <- transform_sample_counts(ps.phylum, function(x) x / sum(x))
 df <- psmelt(ps.rel)
 
 # Top N phyla
+writeLines(" - phylum composition")
 topn <- df %>%
   group_by(Phylum) %>%
   summarise(total = sum(Abundance)) %>%
@@ -153,7 +155,7 @@ ggsave(filename = fname, plot = p, device = "png")
 #############
 ## taxa
 ############
-writeLines(" - use all taxa")
+writeLines(" - Genus composition ")
 ps.rel <- transform_sample_counts(physeq_norm, function(x) x / sum(x))
 topn <- names(sort(taxa_sums(ps.rel), decreasing=TRUE))[1:config$topn]
 ps.topn <- prune_taxa(topn, ps.rel)
@@ -267,7 +269,6 @@ plot_core(ps.rel,
 
 
 # Core with compositionals:
-# library("RColorBrewer")
 # library("reshape")
 
 prevalences <- seq(0.5, 1, .05)
