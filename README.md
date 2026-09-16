@@ -22,7 +22,7 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
 
 ---
 
-[stat0] **Phyloseq**
+[stat1] **Phyloseq**
 1. import data into Phyloseq [import_to_phyloseq.r](phyloseq/import_to_phyloseq.r) [also filters for minimum counts (per taxon)]
 2. CSS normalization of count (abundance) data [normalise_counts.r](phyloseq/normalise_counts.r)
 3. composition of the sponge microbiome [microbiome_composition.r](phyloseq/microbiome_composition.r)
