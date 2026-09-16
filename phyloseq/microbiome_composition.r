@@ -285,7 +285,7 @@ p <- plot_core(ps.rel, plot.type = "heatmap",
         legend.text = element_text(size=8),
         legend.title = element_text(size=9))
 
-fname = file.path(outdir, "comre_microbiome.png")
+fname = file.path(outdir, "core_microbiome.png")
 ggsave(filename = fname, plot = p, device = "png")
 
 print("DONE")
