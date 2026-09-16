@@ -24,7 +24,7 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
 
 [stat0] **Phyloseq**
 1. import data into Phyloseq [import_to_phyloseq.r](phyloseq/import_to_phyloseq.r) [also filters for minimum counts (per taxon)]
-2. composition of the sponge microbiome
+2. composition of the sponge microbiome [microbiome_composition.r](phyloseq/microbiome_composition.r)
 
 
 [stat1] **Clustering / PCA**
