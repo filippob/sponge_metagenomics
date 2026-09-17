@@ -34,7 +34,7 @@ if (length(args) >= 1) {
     repo = "Documents/metagenomics/sponge/sponge_metagenomics",
     output_folder = "analysis/figures",
     input_data = "analysis/phyloseq_norm.RData",
-    treatment_column = "island",
+    treatment_column = "year",
     method = "bray",
     force_overwrite = FALSE
   ))
@@ -87,10 +87,12 @@ mds_D <- mds_D |> inner_join(metadata, by = "id") |>
   select(-c(location, Old.New.Ranking))
 
 writeLines(" - 3D-clustering")
+group_var <- metadata[[config$treatment_column]]
+
 p <- plot_ly(data = mds_D, 
              x = ~dim1, y = ~dim2, z = ~dim3,
              type = "scatter3d",
-             color = ~ island,
+             color = ~ group_var,
              colors = c('#BF382A', '#0C4B8E', '#FFD700','#3CB371', '#FFB6C1')) %>%
   add_markers() %>%
   layout(scene = list(xaxis = list(title = 'NMDS1'),
@@ -99,7 +101,7 @@ p <- plot_ly(data = mds_D,
          annotations = list(
            x = 0.005,
            y = 0.01,
-           text = 'Omics clustering',
+           text = 'Microbiome clustering',
            xref = 'paper',
            yref = 'paper',
            showarrow = FALSE
