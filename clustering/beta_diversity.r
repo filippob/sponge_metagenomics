@@ -47,7 +47,7 @@ outdir = file.path(prjfolder,config$output_folder)
 
 if(!file.exists(file.path(outdir))) dir.create(file.path(outdir), showWarnings = FALSE)
 
-config_fname = file.path(outdir, "composition.config.RData")
+config_fname = file.path(outdir, "betadiv.config.RData")
 save(config, file = config_fname)
 
 ## loading data previously imported in phyloseq
