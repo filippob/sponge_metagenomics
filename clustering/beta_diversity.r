@@ -75,6 +75,17 @@ fname = paste("cluster-", config$treatment_column, ".png", sep="")
 fname = file.path(outdir,fname)
 ggsave(filename = fname, plot = p, device = "png")
 
+mds_D <- cmdscale(dist.bc, k = 3) |>
+  as_tibble() |>
+  mutate(id = labels(dist.bc)) |>
+  rename(dim1 = V1, dim2 = V2, dim3 = V3)
+
+metadata <- sample_data(physeq_norm) |> as.data.frame()
+metadata$id = row.names(metadata)
+
+mds_D <- mds_D |> inner_join(metadata, by = "id") |>
+  select(-c(location, Old.New.Ranking))
+
 writeLines(" - 3D-clustering")
 p <- plot_ly(data = mds_D, 
              x = ~dim1, y = ~dim2, z = ~dim3,
@@ -100,12 +111,12 @@ htmlwidgets::saveWidget(p, fname)
 
 ## Permanova
 writeLines(" - PERMANOVA")
-meta <- data.frame(sample_data(physeq_norm))
+
 form <- as.formula(
   paste("dist.bc ~", config$treatment_column)
 )
 
-obj <- adonis2(form, data = meta)
+obj <- adonis2(form, data = data.frame(metadata))
 print(obj)
 
 pvalue = obj["Model","Pr(>F)"]
