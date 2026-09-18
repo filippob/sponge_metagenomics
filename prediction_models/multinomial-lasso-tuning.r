@@ -157,7 +157,7 @@ dt_folds <- vfold_cv(dt_train, v = config$k_folds, repeats = config$nrepeats_cv)
 
 lasso_grid <- grid_regular(
   penalty(range = c(-10, -0.75)),
-  levels = 20
+  levels = 14
 )
 
 regular_res <- tune_grid(
@@ -173,8 +173,7 @@ regular_res |>
   print(n = 20)
 
 library("repr")
-
-regular_res %>%
+p <- regular_res %>%
   collect_metrics() %>%
   # filter(.metric == "mcc") %>%
   ggplot(aes(penalty, mean, color = .metric)) +
@@ -182,8 +181,11 @@ regular_res %>%
   geom_point() +
   labs(y = "metric value")
 
+fname = file.path(outdir, "figures/lasso_tuning.png")
+ggsave(filename = fname, plot = p, device = "png")
+
 best_auc <- select_best(x = regular_res, metric = "mcc")
-show_best(regular_res, metric = "mcc")
+show_best(regular_res, metric = "mcc") |> print()
 
 # 2.  finalise the model:
 final_lasso <- finalize_model(
@@ -211,24 +213,68 @@ final_res %>%
 final_res %>% 
   pluck(".workflow", 1) %>%   
   extract_fit_parsnip() %>% 
-  #vip(num_features = 20, geom = "point")
   vip()
+
+coef_tbl <- final_res %>%
+  pluck(".workflow", 1) %>%
+  extract_fit_parsnip() %>%
+  broom::tidy()
+
+coef_tbl <- coef_tbl %>%
+  filter(term != "(Intercept)") %>%
+  mutate(importance = abs(estimate)) %>%
+  arrange(desc(importance))
+
+taxa <- data.frame(tax_table(physeq_pruned))
+taxa$term <- row.names(taxa)
+taxa <- select(taxa, c(term, Species))
+
+coef_tbl <- coef_tbl %>%
+  left_join(taxa, by = "term")
+
+p <- coef_tbl %>%
+  slice_max(importance, n = 20) %>%
+  ggplot(aes(
+    x = reorder(Species, importance),
+    y = importance,
+    fill = Species
+  )) +
+  xlab("species") + 
+  geom_col() +
+  coord_flip() + 
+  guides(fill = "none") 
+
+fname = file.path(outdir, "figures/variable_importance.png")
+ggsave(filename = fname, plot = p, device = "png")
 
 #### Predictions
 
 # We collect the predictions on the test set: for each test observations we get the probabilities of belonging to each of the four classes.
-final_res %>%
+preds <- final_res %>%
   collect_predictions()
+
+fname = file.path(outdir, "tables/test_predictions.csv")
+fwrite(x = preds, file = fname, sep = ",")
 
 cm <- final_res %>%
   collect_predictions() %>%
-  conf_mat(island, .pred_class)
+  conf_mat(
+    truth = !!sym(config$target_variable),
+    estimate = .pred_class
+  )
 
 print(cm)
 
-fname <- file.path(basefolder, "confusion_matrix.png")
-png(fname)
-autoplot(cm, type = "heatmap")
-dev.off()
+cm_df <- as.data.frame(cm$table)
+
+p <- ggplot(cm_df, aes(x = Truth, y = Prediction, fill = Freq)) +
+  geom_tile() +
+  geom_text(aes(label = Freq)) +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  scale_y_discrete(limits = rev) +
+  theme_bw()
+
+fname <- file.path(outdir, "figures/confusion_matrix.png")
+ggsave(filename = fname, plot = p, device = "png")
 
 print("DONE!!")
