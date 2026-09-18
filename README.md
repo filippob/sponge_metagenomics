@@ -30,3 +30,6 @@ Mediterranean sea" [STM](https://www.cnr.it/en/short-term-mobility) (Short-term 
 
 [stat1] **Clustering / PCA**
 1. clustering based on microbiome data [beta_diversity.r](clustering/beta_diversity.r) [2D and 3D plots + Permanova]
+
+[stat1] **Predictive models**
+1. Lasso-penalised multinomial classification [multinomial-lasso-tuning.r](prediction_models/multinomial-lasso-tuning.r) [model fine-tuning + variable importance]
