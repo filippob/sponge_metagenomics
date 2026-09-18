@@ -35,13 +35,13 @@ if (length(args) >= 1) {
     prjfolder = "Documents/metagenomics/sponge",
     repo = "Documents/metagenomics/sponge/sponge_metagenomics",
     output_folder = "analysis",
-    input_data = "analysis/phyloseq_norm.RData",
+    input_data = "analysis/phyloseq.RData",
     target_variable = "island",
     nproc = 4,
     split_ratio = 0.80,
     method_cv = "repeatedcv",
-    k_folds = 10,
-    nrepeats_cv = 5,
+    k_folds = 5,
+    nrepeats_cv = 3,
     sampling_method = "up",
     force_overwrite = FALSE
   ))
@@ -62,19 +62,30 @@ writeLines(" - loading normalised phyloseq data")
 fname = file.path(prjfolder, config$input_data)
 load(fname)
 
+otu <- as(otu_table(physeq_pruned), "matrix")
+total_counts <- rowSums(otu)
+prevalence <- rowSums(otu > 0)
+
+keep <- total_counts >= 100 &
+  prevalence >= 5
+
+physeq_pruned <- prune_taxa(keep, physeq_pruned)
+rm(otu)
+gc()
+
 ## Import dataset
-dataset <- otu_table(physeq_norm) |> as.data.frame()
+dataset <- otu_table(physeq_pruned) |> as.data.frame()
 dataset <- t(as.matrix(dataset))
 
 dataset <- as.data.frame(dataset)
 ## subset random columns (thinning)
-cols <- sample(names(dataset), 300)
+cols <- sample(names(dataset), 1000)
 dataset <- dataset %>%
   select(all_of(cols))
 
 dataset$sample_id = row.names(dataset)
 
-metadata <- data.frame(sample_data(physeq_norm))
+metadata <- data.frame(sample_data(physeq_pruned))
 metadata$sample_id = row.names(metadata)
 metadata <- metadata |> select(sample_id,!!config$target_variable)
 
@@ -109,12 +120,11 @@ dt_test <- testing(dt_split)
 
 lasso_recipe <- dt_train %>%
   recipe(reformulate(".", response = config$target_variable)) |>
-  step_corr(all_predictors(), threshold = 0.99) %>%
+  step_corr(all_predictors(), threshold = 0.9) %>%
   step_zv(all_predictors(), -all_outcomes()) %>%
   step_nzv(all_predictors()) |>
   step_normalize(all_numeric(), -all_outcomes()) |>
   step_upsample(all_outcomes(), over_ratio = 1)
-
 
 #### Model building
 
@@ -146,16 +156,13 @@ tune_wf <- workflow() %>%
 dt_folds <- vfold_cv(dt_train, v = config$k_folds, repeats = config$nrepeats_cv)
 
 lasso_grid <- grid_regular(
-  penalty(range = c(-7, -0.5)),
-  levels = 10
+  penalty(range = c(-10, -0.75)),
+  levels = 20
 )
-
-head(lasso_grid)
-nrow(lasso_grid)
 
 regular_res <- tune_grid(
   tune_wf,
-  metrics = metric_set(roc_auc, accuracy, mcc),
+  metrics = metric_set(accuracy, kap, mcc),
   resamples = dt_folds,
   grid = lasso_grid
 )
@@ -166,7 +173,6 @@ regular_res |>
   print(n = 20)
 
 library("repr")
-options(repr.plot.width=14, repr.plot.height=8)
 
 regular_res %>%
   collect_metrics() %>%
@@ -174,7 +180,7 @@ regular_res %>%
   ggplot(aes(penalty, mean, color = .metric)) +
   geom_line(alpha = 0.5, size = 1.5) +
   geom_point() +
-  labs(y = "MCC")
+  labs(y = "metric value")
 
 best_auc <- select_best(x = regular_res, metric = "mcc")
 show_best(regular_res, metric = "mcc")
@@ -193,7 +199,7 @@ final_wf <- workflow() %>%
   add_model(final_lasso)
 
 final_res <- final_wf %>%
-  last_fit(dt_split, metrics = metric_set(roc_auc, accuracy, mcc, brier_class))
+  last_fit(dt_split, metrics = metric_set(kap, accuracy, mcc, brier_class))
 
 # 4.  evaluate the fine-tuned RF model:
 print(final_res)
