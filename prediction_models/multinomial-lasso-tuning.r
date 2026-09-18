@@ -3,8 +3,10 @@ library("dplyr")
 library("glmnet")
 library("themis")
 library("ggplot2")
+library("parallel")
 library("phyloseq")
 library("tidyverse")
+library("doParallel")
 library("tidymodels")
 library("data.table")
 
@@ -76,10 +78,12 @@ gc()
 ## Import dataset
 dataset <- otu_table(physeq_pruned) |> as.data.frame()
 dataset <- t(as.matrix(dataset))
+keep <- colMeans(dataset > 0) >= 0.10
+dataset <- dataset[, keep]
 
 dataset <- as.data.frame(dataset)
 ## subset random columns (thinning)
-cols <- sample(names(dataset), 1000)
+cols <- sample(names(dataset), 9000)
 dataset <- dataset %>%
   select(all_of(cols))
 
@@ -101,9 +105,11 @@ dataset <- dataset %>%
 if(sum(is.na(dataset)) == 0) print("No missing data in the dataset: OK!")
 
 ## Setup parallel backend
-cl <- parallel::makeCluster(config$nproc)
+writeLines(" - parallelising")
+cl <- parallel::makeCluster(parallel::detectCores() - 1)
 doParallel::registerDoParallel(cl)
 
+writeLines(" - splitting the data: training/validation/test")
 dt <- select(dataset, -c(sample_id))
 dt_split <- initial_split(dt, strata = !!config$target_variable, prop = config$split_ratio)
 dt_train <- training(dt_split)
@@ -120,11 +126,12 @@ dt_test <- testing(dt_split)
 
 lasso_recipe <- dt_train %>%
   recipe(reformulate(".", response = config$target_variable)) |>
-  step_corr(all_predictors(), threshold = 0.9) %>%
   step_zv(all_predictors(), -all_outcomes()) %>%
   step_nzv(all_predictors()) |>
   step_normalize(all_numeric(), -all_outcomes()) |>
-  step_upsample(all_outcomes(), over_ratio = 1)
+  step_upsample(all_outcomes(), over_ratio = 1.25)
+
+temp <- recipes::prep(lasso_recipe) %>% juice()
 
 #### Model building
 
@@ -150,9 +157,8 @@ tune_wf <- workflow() %>%
 
 
 #### Tuning the hyperparameters
-
+writeLines(" - model tuning: hyperparameters")
 # We use k-fold cross-validation to tune the hyperparameters in the training set
-
 dt_folds <- vfold_cv(dt_train, v = config$k_folds, repeats = config$nrepeats_cv)
 
 lasso_grid <- grid_regular(
@@ -204,10 +210,14 @@ final_res <- final_wf %>%
   last_fit(dt_split, metrics = metric_set(kap, accuracy, mcc, brier_class))
 
 # 4.  evaluate the fine-tuned RF model:
+writeLines(" - evaluating the final model")
 print(final_res)
-final_res %>%
+performance_metrics <- final_res %>%
   collect_metrics()
 
+print(performance_metrics)
+fname = file.path(outdir, "tables/performance_mertrics.csv")
+fwrite(x = performance_metrics, file = fname, sep = ",")
 
 # 5.  get variable importance:
 final_res %>% 
