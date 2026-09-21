@@ -32,7 +32,7 @@ if (length(args) >= 1) {
   config = rbind(config, data.frame(
     prjfolder = "Documents/metagenomics/sponge",
     repo = "Documents/metagenomics/sponge/sponge_metagenomics",
-    output_folder = "analysis/figures",
+    output_folder = "analysis",
     input_data = "analysis/phyloseq_norm.RData",
     treatment_column = "Island",
     topn = 15, ## max n. of phylum to display
@@ -82,7 +82,7 @@ p <- ggplot(df, aes(x = Sample, y = Abundance, fill = Phylum2)) +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, size = 4))
 
-fname = file.path(outdir, "phylum_per_sample.png")
+fname = file.path(outdir, "figures/phylum_per_sample.png")
 ggsave(filename = fname, plot = p, device = "png")
 
 ## GROUP BY YEAR
@@ -125,7 +125,7 @@ p <- ggplot(df.group,
   theme(legend.title = element_text(size = 7), 
                legend.text = element_text(size = 6))
 
-fname = file.path(outdir, "phylums_per_year.png")
+fname = file.path(outdir, "figures/phylums_per_year.png")
 ggsave(filename = fname, plot = p, device = "png")
 
 ## GROUP BY ISLAND
@@ -149,13 +149,13 @@ p <- ggplot(df.group,
   theme(legend.title = element_text(size = 7), 
         legend.text = element_text(size = 6))
 
-fname = file.path(outdir, "phylums_per_island.png")
+fname = file.path(outdir, "figures/phylums_per_island.png")
 ggsave(filename = fname, plot = p, device = "png")
 
 #############
 ## taxa
 ############
-writeLines(" - Genus composition ")
+writeLines(" - Species composition ")
 ps.rel <- transform_sample_counts(physeq_norm, function(x) x / sum(x))
 topn <- names(sort(taxa_sums(ps.rel), decreasing=TRUE))[1:config$topn]
 ps.topn <- prune_taxa(topn, ps.rel)
@@ -163,13 +163,13 @@ ps.topn <- prune_taxa(topn, ps.rel)
 df <- psmelt(ps.topn)
 
 topn <- df %>%
-  group_by(Genus) %>%
+  group_by(Species) %>%
   summarise(total = sum(Abundance)) %>%
   arrange(desc(total)) %>%
   slice(1:config$topn) %>%
-  pull(Genus)
+  pull(Species)
 
-df$Genus = factor(df$Genus, levels = rev(topn))
+df$Species = factor(df$Species, levels = rev(topn))
 
 samples <- df |>
   filter(OTU == "3101277") |>
@@ -180,23 +180,23 @@ samples <- df |>
 
 df$Sample = factor(df$Sample, levels = rev(samples))
 
-p <- ggplot(df, aes(x = Sample, y = Abundance, fill = Genus)) +
+p <- ggplot(df, aes(x = Sample, y = Abundance, fill = Species)) +
   geom_bar(stat = "identity") +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, size = 4))
 
-fname = file.path(outdir, "genus_per_sample.png")
+fname = file.path(outdir, "figures/species_per_sample.png")
 ggsave(filename = fname, plot = p, device = "png")
 
 df.group <- df %>%
-  group_by(island, Genus) %>%
+  group_by(island, Species) %>%
   summarise(Abundance = mean(Abundance),
             .groups = "drop")
 
 p <- ggplot(df.group,
        aes(x = "",
            y = Abundance,
-           fill = Genus)) + 
+           fill = Species)) + 
   geom_bar(stat="identity", width=1) + facet_wrap(~island, ncol=2) + coord_polar("y", start=0) + 
   scale_fill_manual(values = cols) +
   theme_classic() + theme(axis.line = element_blank(),
@@ -208,7 +208,31 @@ p <- ggplot(df.group,
   theme(legend.title = element_text(size = 8), 
         legend.text = element_text(size = 7))
 
-fname = file.path(outdir, "genus_per_island.png")
+fname = file.path(outdir, "figures/species_per_island.png")
+ggsave(filename = fname, plot = p, device = "png")
+
+## GROUP BY YEAR
+df.group <- df %>%
+  group_by(year, Species) %>%
+  summarise(Abundance = mean(Abundance),
+            .groups = "drop")
+
+p <- ggplot(df.group,
+            aes(x = "",
+                y = Abundance,
+                fill = Species)) + 
+  geom_bar(stat="identity", width=1) + facet_wrap(~year, ncol=1) + coord_polar("y", start=0) + 
+  scale_fill_manual(values = cols) +
+  theme_classic() + theme(axis.line = element_blank(),
+                          axis.text = element_blank(),
+                          axis.ticks = element_blank(),
+                          axis.title.y = element_blank(),
+                          plot.title = element_text(hjust = 0.5, color = "#666666")) +
+  guides(color = guide_legend(override.aes = list(size = 0.5))) + 
+  theme(legend.title = element_text(size = 8), 
+        legend.text = element_text(size = 7))
+
+fname = file.path(outdir, "figures/species_per_year.png")
 ggsave(filename = fname, plot = p, device = "png")
 
 
@@ -250,7 +274,7 @@ core_table <- data.frame(
 core_table <- core_table |>
   arrange(desc(Mean_abundance))
 
-fname = file.path(outdir, "core_microbiome.csv")
+fname = file.path(outdir, "tables/core_microbiome.csv")
 fwrite(x = core_table, file = fname, sep = ",")
 
 #######################################
@@ -285,7 +309,7 @@ p <- plot_core(ps.rel, plot.type = "heatmap",
         legend.text = element_text(size=8),
         legend.title = element_text(size=9))
 
-fname = file.path(outdir, "core_microbiome.png")
+fname = file.path(outdir, "figures/core_microbiome.png")
 ggsave(filename = fname, plot = p, device = "png")
 
 print("DONE")
