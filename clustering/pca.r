@@ -108,3 +108,28 @@ p <- (bipl1 / bipl2 / bipl3)
 fname = file.path(outdir, "figures/pca_microbiome.png")
 ggsave(filename = fname, plot = p, device = "png")
 
+################
+### genomic data
+################
+## PCs from: /home/filippo/Downloads/plink --allow-extra-chr --vcf subset_138_DP5_50_mm80_maf05.vcf.gz --double-id --pca --out snp
+pcs <- read.table("data/snp.eigenvec", header = FALSE)
+eigenval <- scan("data/snp.eigenval")
+
+colnames(pcs)[1:2] <- c("FID", "IID")
+colnames(pcs)[3:ncol(pcs)] <- paste0("PC", 1:(ncol(pcs) - 2))
+pcs <- select(pcs, -FID)
+
+pcs$island = labels$island[match(pcs$IID, labels$sample)]
+
+p <- ggplot(pcs, aes(PC1, PC2, colour = island)) +
+  geom_point(size = 3) +
+  stat_ellipse() +
+  theme_classic() +
+  labs(
+    x = paste0("PC1 (", round(var_explained[1] * 100, 2), "%)"),
+    y = paste0("PC2 (", round(var_explained[2] * 100, 2), "%)")
+  )
+
+fname = file.path(outdir, "figures/pca_genomics.png")
+ggsave(filename = fname, plot = p, device = "png")
+
